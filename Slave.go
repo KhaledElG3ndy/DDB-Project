@@ -4,24 +4,25 @@ import (
 	"bufio"
 	"database/sql"
 	"fmt"
+	"net"
 	"os"
 	"strings"
-	"net"
 
 	_ "github.com/go-sql-driver/mysql"
 )
 
 var db *sql.DB
 var backup bool
+
 func main() {
 	var err error
-	conn, err := net.Dial("tcp", "127.0.0.1:9999") 
+	conn, err := net.Dial("tcp", "192.168.232.44:9999")
 	if err != nil {
 		fmt.Println("Failed to connect to server:", err)
 		return
 	}
 	defer conn.Close()
-	masterConf := "root:Khaled@l3153928@tcp(127.0.0.1:3306)/ddbproject" 
+	masterConf := "root:rootroot@tcp(192.168.232.44:3306)/ddbproject"
 	slaveConf := "root:Khaled@l3153928@tcp(127.0.0.1:3306)/backup"
 	db, err = sql.Open("mysql", masterConf)
 	if err != nil || db.Ping() != nil {
@@ -85,7 +86,12 @@ func executeQuery(query string) (string, error) {
 			}
 
 			for i, col := range cols {
-				result += fmt.Sprintf("%s: %v\t", col, values[i])
+				val := values[i]
+				if b, ok := val.([]byte); ok {
+					result += fmt.Sprintf("%s: %s\t", col, string(b))
+				} else {
+					result += fmt.Sprintf("%s: %v\t", col, val)
+				}
 			}
 			result += "\n"
 		}
@@ -102,7 +108,7 @@ func executeQuery(query string) (string, error) {
 			backupDB, err := sql.Open("mysql", slaveConf)
 			if err == nil && backupDB.Ping() == nil {
 				defer backupDB.Close()
-				_, _ = backupDB.Exec(query) 
+				_, _ = backupDB.Exec(query)
 			}
 		}
 		return fmt.Sprintf("Query OK, %d rows affected", affected), nil
