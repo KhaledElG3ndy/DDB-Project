@@ -49,13 +49,11 @@ Ensure you have:
 Update credentials in the Go code as needed.
 
 ### 2. Run the Master Server
-
-```bash
-go run main.go
+1. go run main.go
 Starts a TCP server on port 9999
 
 Starts an HTTP server with GUI on localhost:8080
-3. Run a Client
+2. Run a Client
 bash
 Copy
 Edit
@@ -66,7 +64,7 @@ Accepts SQL queries from terminal
 
 Falls back to slave database if needed
 
-4. Use the Web GUI
+3. Use the Web GUI
 Visit: http://localhost:8080
 
 Submit SQL queries and view results directly from your browser
