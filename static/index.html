@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SQL Master GUI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #007bff;
+      --success: #28a745;
+      --error: #dc3545;
+      --bg: #121212;
+      --card-bg: #1e1e1e;
+      --text: #e0e0e0;
+      --border: #333;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+      background: var(--bg);
+      padding: 2rem;
+      line-height: 1.6;
+      color: var(--text);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    h1 {
+      color: var(--primary);
+      margin-bottom: 1.5rem;
+      font-size: 2rem;
+    }
+
+    .query-section {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: 3fr 1fr;
+      margin-bottom: 1.5rem;
+    }
+
+    .query-editor, .history-panel {
+      background: var(--card-bg);
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      padding: 1rem;
+      border: 1px solid var(--border);
+    }
+
+    textarea {
+      width: 100%;
+      height: 150px;
+      resize: vertical;
+      font-family: 'Fira Code', monospace;
+      font-size: 14px;
+      padding: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      transition: border-color 0.3s;
+      background: #2a2a2a;
+      color: var(--text);
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(0,123,255,0.2);
+    }
+
+    .history-panel {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .history-panel h3 {
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+    }
+
+    .history-item {
+      padding: 0.5rem;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      font-size: 0.9rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--text);
+    }
+
+    .history-item:hover {
+      background: #333;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 0.5rem;
+      margin: 1rem 0;
+    }
+
+    button {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background-color 0.3s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #0056b3;
+    }
+
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: #545b62;
+    }
+
+    #result {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      min-height: 100px;
+      font-family: 'Fira Code', monospace;
+      font-size: 14px;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .error {
+      color: var(--error);
+      border: 1px solid #ff6b6b;
+      padding: 1rem;
+      border-radius: 4px;
+      margin-top: 1rem;
+      background: #2a2a2a;
+    }
+
+    .success {
+      color: var(--success);
+    }
+
+    .loading {
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .stars-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .star {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      background: white;
+      animation: twinkle 5s infinite;
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.2; }
+      50% { opacity: 1; }
+    }
+
+    @media (max-width: 768px) {
+      .query-section {
+        grid-template-columns: 1fr;
+      }
+      
+      .history-panel {
+        max-height: 200px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="stars-container"></div>
+  <div class="container">
+    <h1>SQL Master GUI</h1>
+    
+    <div class="query-section">
+      <div class="query-editor">
+        <textarea id="query" placeholder="Enter your SQL query here..." spellcheck="false"></textarea>
+        <div class="button-group">
+          <button class="btn-primary" onclick="sendQuery()">Run Query</button>
+          <button class="btn-secondary" onclick="clearQuery()">Clear</button>
+        </div>
+      </div>
+      
+      <div class="history-panel">
+        <h3>Query History</h3>
+        <div id="history"></div>
+      </div>
+    </div>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    const queryEl = document.getElementById('query');
+    const resultEl = document.getElementById('result');
+    const historyEl = document.getElementById('history');
+    let queryHistory = JSON.parse(localStorage.getItem('sqlHistory')) || [];
+
+    function saveToHistory(query) {
+      if (query && !queryHistory.includes(query)) {
+        queryHistory.unshift(query);
+        queryHistory = queryHistory.slice(0, 20); // Limit to 20 queries
+        localStorage.setItem('sqlHistory', JSON.stringify(queryHistory));
+        renderHistory();
+      }
+    }
+
+    function renderHistory() {
+      historyEl.innerHTML = queryHistory
+        .map((q, i) => `<div class="history-item" onclick="loadQuery(${i})">${q}</div>`)
+        .join('');
+    }
+
+    function loadQuery(index) {
+      queryEl.value = queryHistory[index];
+    }
+
+    function clearQuery() {
+      queryEl.value = '';
+      resultEl.textContent = '';
+    }
+
+    async function sendQuery() {
+      const query = queryEl.value.trim();
+      if (!query) {
+        resultEl.innerHTML = '<div class="error">Please enter a query</div>';
+        return;
+      }
+
+      resultEl.textContent = 'Running...';
+      resultEl.classList.add('loading');
+
+      try {
+        const res = await fetch('/query', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query })
+        });
+        const data = await res.json();
+
+        saveToHistory(query);
+
+        if (data.error) {
+          resultEl.innerHTML = `<div class="error">${data.error}</div>`;
+        } else {
+          resultEl.innerHTML = `<pre class="success">${data.result}</pre>`;
+        }
+      } catch (err) {
+        resultEl.innerHTML = `<div class="error">Request failed: ${err.message}</div>`;
+      } finally {
+        resultEl.classList.remove('loading');
+      }
+    }
+
+    renderHistory();
+
+    queryEl.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.key === 'Enter') {
+        sendQuery();
+      }
+    });
+
+    // Create stars for background animation
+    const starsContainer = document.querySelector('.stars-container');
+    const numStars = 100;
+    for (let i = 0; i < numStars; i++) {
+      const star = document.createElement('div');
+      star.className = 'star';
+      star.style.top = `${Math.random() * 100}vh`;
+      star.style.left = `${Math.random() * 100}vw`;
+      star.style.animationDelay = `${Math.random() * 5}s`;
+      starsContainer.appendChild(star);
+    }
+  </script>
+</body>
+</html>
