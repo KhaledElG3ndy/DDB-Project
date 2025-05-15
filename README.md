@@ -1,3 +1,5 @@
+![image](https://github.com/user-attachments/assets/2a2b6785-3627-4384-9cf0-8f15f473422f)
+
 # 📡 Distributed SQL System with Master-Slave Architecture
 
 This project is a distributed SQL execution system written in Go. It features a **master-slave database architecture** for failover support, **TCP client-server communication**, and a **web-based GUI** for interacting with the system.
@@ -67,4 +69,4 @@ Falls back to slave database if needed
 4. Use the Web GUI
 Visit: http://localhost:8080
 
-Submit SQL queries and view results directly from your browser.![image](https://github.com/user-attachments/assets/eecf6855-1e80-4c24-8b2c-8b6ed05019f7)
+Submit SQL queries and view results directly from your browser
